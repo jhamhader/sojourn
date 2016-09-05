@@ -1,23 +1,46 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-libvirt_host = "host"
-base_name = "devstack"
+require 'yaml'
+
+begin
+  $config = YAML.load_file('config.yaml')
+rescue
+  puts 'Error reading config.yaml'
+  return
+end
+
+$default_config = {
+  "host" => "localhost",
+  "playbook" => "ansible/playbook.yaml",
+  "box" => "fedora/24-cloud-base",
+  "memory" => 8192,
+  "cpus" => 1,
+  "storage_pool_name" => nil,
+  "bastion_user" => nil,
+  "bastion_host" => nil,
+  "basename" => "devstack",
+}
+
+def get_config(key)
+  $config.fetch(key, $default_config[key])
+end
+
+libvirt_host = get_config("host")
+ansible_playbook = get_config("playbook")
+box = get_config("box")
+basename = get_config("basename")
+bastion_user = get_config("bastion_user")
+bastion_host = get_config("bastion_host")
+memory = get_config("memory")
+cpus = get_config("cpus")
+storage_pool_name = get_config("storage_pool_name")
 id_range = (111..120)
-box = "fedora/24-cloud-base"
-memory = 8192
-cpus = 1
-storage_pool_name = "volumes"
 bridge_dev = "bridge"
-ansible_playbook = "ansible/playbook.yaml"
-bastion_user = "user"
-bastion_host = "host"
 
 Vagrant.configure(2) do |config|
 
-
   config.vm.box = box
-
   config.vm.synced_folder '~/vagrant/common', '/vagrant_common', type: "rsync"
   config.ssh.insert_key = false
   config.ssh.username = "root"
@@ -26,14 +49,12 @@ Vagrant.configure(2) do |config|
     libvirt.host = libvirt_host
     libvirt.connect_via_ssh = true
     libvirt.username = "root"
-    # libvirt.password = "secrete"
     libvirt.memory = memory
     libvirt.cpus = cpus
 
     if defined? storage_pool_name
       libvirt.storage_pool_name = storage_pool_name
     end
-
   end
 
   machines = []
@@ -67,8 +88,4 @@ Vagrant.configure(2) do |config|
     ansible.force_remote_user = true
   end
 
-  # config.vm.provision "shell" do |s|
-  #   s.inline = "sudo -u stack /vagrant_common/guest_scripts/devstack.sh"
-  #   s.args = "/vagrant/local.conf"
-  # end
 end
