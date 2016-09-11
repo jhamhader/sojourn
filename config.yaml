@@ -1,0 +1,33 @@
+default:
+  provider_host: host
+  provider_username: root
+  box: fedora/24-cloud-base
+  memory: 8192
+  cpus: 1
+  ansible_playbook: ansible/playbook.yaml
+  storage_pool_name: volumes
+  bastion_user: user
+  bastion_host: host
+  public_network:
+    - type: bridge
+      dev: some-bridge
+      ip: 1.1.1.%<id>s
+  private_network:
+    - ip: 10.0.%<id>s.2
+
+machines:
+  devstack-111:
+    args:
+      id: 111
+
+  devstack-112:
+    args:
+      id: 112
+
+  devstack-113:
+    args:
+      id: 113
+
+  devstack-114:
+    args:
+      id: 114
