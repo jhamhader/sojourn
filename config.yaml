@@ -1,33 +1,56 @@
-default:
-  provider_host: host
-  provider_username: root
-  box: fedora/24-cloud-base
-  memory: 8192
-  cpus: 1
-  ansible_playbook: ansible/playbook.yaml
-  storage_pool_name: volumes
+global:
+  ansible-playbook: ansible/playbook.yaml
   bastion_user: user
   bastion_host: host
-  public_network:
-    - type: bridge
-      dev: some-bridge
-      ip: 1.1.1.%<id>s
-  private_network:
-    - ip: 10.0.%<id>s.2
+
+roles:
+  fedora:
+    box: fedora/24-cloud-base
+  devstack-host:
+    provider_host: user
+    provider_username: root
+    storage_pool_name: volumes
+  network-devstack:
+    public_network:
+      - type: bridge
+        dev: some-bridge
+        ip: 1.1.1.%<item>s
+    private_network:
+      - ip: 10.0.%<item>s.2
+  memory-light:
+    memory: 4096
+    cpus: 1
+  memory-medium:
+    memory: 8192
+    cpus: 1
+  memory-high:
+    memory: 16384
+    cpus: 1
+  ansible-karbor:
+    ansible_args:
+      local-conf: local.conf.karbor
+    ansible_groups:
+      - devstack
+  devstack-karbor:
+    roles:
+      - fedora
+      - memory-medium
+      - network-devstack
+      - memory-medium
+      - ansible-karbor
 
 machines:
-  devstack-111:
-    args:
-      id: 111
+  ~range-devstack:
+    ~start: 111
+    ~count: 3
+    devstack-%<item>s:
+      roles:
+        - devstack-host
+        - devstack-karbor
+  devstack-115:
+    roles:
+      - devstack-karbor
+    memory: 4096
+    ansible_host_vars:
+      test: 1
 
-  devstack-112:
-    args:
-      id: 112
-
-  devstack-113:
-    args:
-      id: 113
-
-  devstack-114:
-    args:
-      id: 114

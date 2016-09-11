@@ -1,99 +1,52 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require 'tsort'
 require 'yaml'
 
-begin
-  $config = YAML.load_file('config.yaml')
-rescue
-  puts 'Error reading config.yaml'
-  return
-end
+$config_filename = 'config.yaml'
 
 class ConfigurationError < StandardError
 end
 
-$initial_config = {
-  "provider_host" => "localhost",
-  "provider_username" => "root",
-  "playbook" => "ansible/playbook.yaml",
-  "box" => "fedora/24-cloud-base",
-  "memory" => 8192,
-  "cpus" => 1,
-  "storage_pool_name" => nil,
-  "bastion_user" => nil,
-  "bastion_host" => nil,
-  "public_networks": [],
-  "private_networks": [],
-}
-
-$default_config = $config.fetch("default", {})
-
-unless $config.has_key?("machines")
-    raise ConfigurationError.new, "unable to find machines subsection in config"
+def deep_copy(obj)
+  return Marshal.load(Marshal.dump(obj))
 end
 
-$machine_config = $config["machines"]
-def get_machine_config(machine, key)
-  unless $machine_config.has_key?(machine)
-    raise ConfigurationError.new, "unable to find #{machine} in config"
-  end
-  return $machine_config[machine].fetch(
-    key,
-    $default_config.fetch(key, $initial_config[key])
-  )
-end
+def topological_sort_roles(roles)
+  each_role = lambda { |&b|
+    roles.each_key(&b)
+  }
 
-$machines = $machine_config.keys
-
-def apply_machine_args_(args, obj)
-  if obj.is_a?(String)
-    begin
-      return obj % args
-    rescue KeyError => e
-      raise ConfigurationError.new, "unable to find arg: #{e.message}"
+  each_role_child = lambda { |node, &b|
+    unless roles.has_key?(node)
+      raise ConfigurationError.new, "role \"#{node}\" could not be found"
     end
-  end
-  if obj.is_a?(Array)
-    return obj.map { |k| apply_machine_args_(args, k) }
-  end
-  if obj.is_a?(Hash)
-    return obj.map { |k| apply_machine_args_(args, k[1]) }
-  end
-  return obj
-end
-
-def apply_machine_args(machine, obj)
-  args = get_machine_config(machine, "args")
-  args = args.each_with_object({}){|(k,v), h| h[k.to_sym] = v}
-  if args == nil
-    return obj
-  end
-  return apply_machine_args_(args, obj)
+    roles[node].fetch("roles", []).each(&b)
+  }
+  return TSort.tsort(each_role, each_role_child)
 end
 
 class VirtualMachine
-  def initialize(machine_id)
-    @machine_id = machine_id
-  end
-
-  def get_config_raw(key)
-    return get_machine_config(@machine_id, key)
-  end
-
-  def apply_args(obj)
-    apply_machine_args(@machine_id, obj)
+  attr_accessor :name, :ansible
+  def initialize(name, config)
+    @config = apply_args(config)
+    @name = name
+    @ansible = {
+      "groups" => [],
+      "host_vars" => {},
+    }
   end
 
   def get_config(key)
-    return apply_args(get_config_raw(key))
+    return @config[key]
   end
 
-  def create(vm_obj)
+  def create(vm_obj, ansible_config)
     create_meta(vm_obj)
     create_provider(vm_obj)
     create_networks(vm_obj)
-    create_provision(vm_obj)
+    create_provision(vm_obj, ansible_config)
   end
 
   def create_meta(vm_obj)
@@ -116,29 +69,20 @@ class VirtualMachine
     end
   end
 
-  def create_provision(vm_obj)
-    ansible_playbook = get_config("ansible_playbook")
-    unless ansible_playbook.instance_of?(String)
-      return
+  def create_provision(vm_obj, ansible_config)
+    ansible_groups = get_config("ansible_groups")
+    if ansible_groups.is_a?(Array)
+      @ansible["groups"] = ansible_groups
+    else
+      @ansible["groups"] = [ansible_groups, ]
     end
 
-    bastion_user = get_config("bastion_user")
-    bastion_host = get_config("bastion_host")
-    ssh_args = nil
-
-    if bastion_user.is_a?(String) and bastion_host.is_a?(String)
-      ssh_args = "-o ProxyCommand=\"ssh -vvv -W %h:%p #{bastion_user}@#{bastion_host}\""
+    v = get_config("ansible_host_vars")
+    @ansible["host_vars"] = get_config("ansible_host_vars")
+    if @ansible["host_vars"] == nil
+      @ansible["host_vars"] = {}
     end
-
-    vm_obj.vm.provision "ansible" do |ansible|
-      ansible.verbose = "vvvv"
-      ansible.playbook = ansible_playbook
-      ansible.groups = {
-        "devstack" => $machines
-      }
-      ansible.raw_ssh_args = ssh_args
-      ansible.force_remote_user = true
-    end
+    ansible_config.add_machine(@name, @ansible)
   end
 
   def create_networks_(vm_obj, type)
@@ -160,16 +104,192 @@ class VirtualMachine
 
 end
 
+class Config
+  attr_accessor :machines, :roles, :global
+  def initialize(config_filename)
+    @config_filename = config_filename
+    @config = {}
+    @roles = {}
+    @machines = {}
+    @global = {}
+  end
+
+  def read_config()
+    begin
+      @config = YAML.load_file(@config_filename)
+    rescue
+      raise ConfigurationError.new "unable to parse #{@config_filename}"
+    end
+    unless @config.has_key?("machines")
+        raise ConfigurationError.new, "unable to find machines subsection in config"
+    end
+  end
+
+  def parse_config()
+    if @config.has_key?("global")
+      @global = @config["global"]
+    end
+    if @config.has_key?("roles")
+      parse_roles(@config["roles"])
+    end
+    if @config.has_key?("machines")
+      parse_machines(@config["machines"])
+    end
+  end
+
+  def apply_sub_roles(object)
+    res = {}
+    sub_roles = object.fetch("roles", [])
+    sub_roles.each { |sub_role|
+      res.update(@roles[sub_role])
+    }
+    res.update(object)
+    res.delete("roles")
+    return res
+  end
+
+  def parse_role(role)
+    return apply_sub_roles(role)
+  end
+
+  def parse_roles(roles)
+    roles_by_order = topological_sort_roles(roles)
+    roles_by_order.each { |role_key|
+      role_value = roles[role_key]
+      @roles[role_key] = parse_role(role_value)
+    }
+  end
+
+  def expand_range(range)
+    start = range.delete("~start")
+    count = range.delete("~count")
+    expanded = {}
+    for idx in Range.new(start, start + count)
+      fmt_map = { :item => idx }
+      range.each { |k, v|
+        expanded_v = deep_copy(v)
+        k = k % fmt_map
+        unless expanded_v.has_key?("args")
+          expanded_v["args"] = {}
+        end
+        expanded_v["args"]["item"] = idx
+        expanded[k] = expanded_v
+      }
+    end
+    return expanded
+  end
+
+  def expand_ranges(machines)
+    ranges = machines.select { |k, v|
+      k.start_with?("~range-")
+    }
+
+    machines.delete_if { |k, v|
+      k.start_with?("~range-")
+    }
+
+    ranges.each { |range_key, range_value|
+      expanded_range = expand_range(range_value)
+      expanded_range.each { |machine_key, machine_value|
+        machines[machine_key] = machine_value
+      }
+    }
+  end
+
+  def parse_machine(machine_name, machine)
+    parsed_machine = apply_sub_roles(machine)
+    return VirtualMachine.new(machine_name, parsed_machine)
+  end
+
+  def parse_machines(machines)
+    expand_ranges(machines)
+    machines.each{ |machine_name, machine|
+      @machines[machine_name] = parse_machine(machine_name, machine)
+    }
+  end
+end
+
+class AnsibleConfig
+  def initialize(config)
+    @playbook = config.global["ansible-playbook"]
+    @verbose = config.global.fetch("ansible-verbose", "vvvv")
+    @bastion_user = config.global["bastion_user"]
+    @bastion_host = config.global["bastion_host"]
+    @groups = {}
+    @host_vars = {}
+  end
+
+  def add_machine(vm_name, vm_ansible)
+    vm_ansible.fetch("groups", []).each{ |group|
+      if @groups.has_key?(group)
+        @groups[group].push(vm_name)
+      else
+        @groups[group] = [vm_name, ]
+      end
+    }
+    @host_vars[vm_name] = vm_ansible.fetch("host_vars", {})
+  end
+
+  def set(ansible)
+    ansible.verbose = @verbose
+    ansible.playbook = @playbook
+    ansible.groups = @groups
+    ansible.host_vars = @host_vars
+    if @bastion_user.is_a?(String) and @bastion_host.is_a?(String)
+      ansible.raw_ssh_args = "-o ProxyCommand=\"ssh -vvv -W %h:%p #{@bastion_user}@#{@bastion_host}\""
+    end
+    ansible.force_remote_user = true
+  end
+end
+
+def apply_machine_args_(args, obj)
+  if obj.is_a?(String)
+    begin
+      return obj % args
+    rescue KeyError => e
+      raise ConfigurationError.new, "unable to find arg: #{e.message}"
+    end
+  end
+  if obj.is_a?(Array)
+    return obj.map { |k| apply_machine_args_(args, k) }
+  end
+  if obj.is_a?(Hash)
+    mapping = obj.map { |k, v| [k, apply_machine_args_(args, v)] }.to_h
+    return mapping
+  end
+  return obj
+end
+
+def apply_args(config)
+  args = config.delete("args")
+  if args == nil
+    return config
+  end
+  args = args.each_with_object({}){|(k,v), h| h[k.to_sym] = v}
+  applied = apply_machine_args_(args, config)
+  return applied
+end
+
+
 Vagrant.configure(2) do |config|
 
   config.ssh.insert_key = false
   config.ssh.username = "root"
 
-  $machines.each { |machine_id|
-    config.vm.define machine_id do |vm_obj|
-      vm = VirtualMachine.new(machine_id)
-      vm.create(vm_obj)
+  c = Config.new($config_filename)
+  c.read_config()
+  c.parse_config()
+
+  ansible_config = AnsibleConfig.new(c)
+
+  c.machines.each_value { |vm|
+    config.vm.define vm.name() do |vm_obj|
+      vm.create(vm_obj, ansible_config)
     end
   }
+
+  config.vm.provision "ansible" do |ansible|
+    ansible_config.set(ansible)
+  end
 
 end
