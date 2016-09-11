@@ -58,7 +58,7 @@ class VirtualMachine
     vm_obj.vm.provider :libvirt do |libvirt|
       libvirt.host = get_config("provider_host")
       libvirt.connect_via_ssh = true
-      libvirt.username = get_config("provider_username")
+      libvirt.username = get_config("provider_user")
       libvirt.memory = get_config("memory")
       libvirt.cpus = get_config("cpus")
 
@@ -71,16 +71,22 @@ class VirtualMachine
 
   def create_provision(vm_obj, ansible_config)
     ansible_groups = get_config("ansible_groups")
+    if ansible_groups.nil?
+      ansible_groups = ["devstack"]
+    end
     if ansible_groups.is_a?(Array)
       @ansible["groups"] = ansible_groups
     else
       @ansible["groups"] = [ansible_groups, ]
     end
 
-    v = get_config("ansible_host_vars")
     @ansible["host_vars"] = get_config("ansible_host_vars")
     if @ansible["host_vars"] == nil
       @ansible["host_vars"] = {}
+    end
+    devstack_local_conf = get_config("devstack_local_conf")
+    if devstack_local_conf.is_a?(String)
+      @ansible["host_vars"]["devstack_local_conf"] = devstack_local_conf
     end
     ansible_config.add_machine(@name, @ansible)
   end
@@ -160,37 +166,40 @@ class Config
     }
   end
 
-  def expand_range(range)
-    start = range.delete("~start")
-    count = range.delete("~count")
+  def expand_range(range_key, range_value)
+    start = range_value.fetch("start", 1)
+    count = range_value.fetch("count", 1)
+    range_value.delete("start")
+    range_value.delete("count")
+    range_value["type"] = "machine"
     expanded = {}
-    for idx in Range.new(start, start + count)
+    for idx in Range.new(start, start + count, true)
       fmt_map = { :item => idx }
-      range.each { |k, v|
-        expanded_v = deep_copy(v)
-        k = k % fmt_map
-        unless expanded_v.has_key?("args")
-          expanded_v["args"] = {}
-        end
-        expanded_v["args"]["item"] = idx
-        expanded[k] = expanded_v
-      }
+      expanded_key = range_key % fmt_map
+      if expanded_key == range_key
+        expanded_key = "%s-%d" % [expanded_key, idx]
+      end
+      expanded_value = deep_copy(range_value)
+      unless expanded_value.has_key?("args")
+        expanded_value["args"] = {}
+      end
+      expanded_value["args"]["item"] = idx
+      expanded[expanded_key] = expanded_value
     end
     return expanded
   end
 
   def expand_ranges(machines)
-    ranges = machines.select { |k, v|
-      k.start_with?("~range-")
+    is_range = lambda { |machine_name, machine|
+      machine.fetch("type", "machine") == "range"
     }
+    ranges = machines.select(&is_range)
 
-    machines.delete_if { |k, v|
-      k.start_with?("~range-")
-    }
+    machines.delete_if(&is_range)
 
     ranges.each { |range_key, range_value|
-      expanded_range = expand_range(range_value)
-      expanded_range.each { |machine_key, machine_value|
+      expanded_ranges = expand_range(range_key, range_value)
+      expanded_ranges.each { |machine_key, machine_value|
         machines[machine_key] = machine_value
       }
     }
@@ -211,8 +220,8 @@ end
 
 class AnsibleConfig
   def initialize(config)
-    @playbook = config.global["ansible-playbook"]
-    @verbose = config.global.fetch("ansible-verbose", "vvvv")
+    @playbook = config.global["ansible_playbook"]
+    @verbose = config.global.fetch("ansible_verbose", false)
     @bastion_user = config.global["bastion_user"]
     @bastion_host = config.global["bastion_host"]
     @groups = {}

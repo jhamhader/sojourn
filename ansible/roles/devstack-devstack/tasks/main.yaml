@@ -7,11 +7,11 @@
     dest: /opt/stack/devstack
 
 - name: set local.conf
-  become: yes
-  become_user: stack
   copy:
-    src: local.conf
+    src: "{{ devstack_local_conf }}"
     dest: /opt/stack/devstack/local.conf
+    owner: stack
+    group: stack
 
 - name: run devstack
   become: yes

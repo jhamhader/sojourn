@@ -8,8 +8,8 @@ SERVICE_TOKEN=111222333444
 ADMIN_PASSWORD=secretadmin
 DATA_DIR=$BASE/data
 
-enable_plugin karbor http://git.openstack.org/openstack/karbor refs/changes/91/365191/2
-enable_plugin karbor-dashboard http://git.openstack.org/openstack/karbor-dashboard refs/changes/30/365330/1
+enable_plugin karbor http://git.openstack.org/openstack/karbor master
+enable_plugin karbor-dashboard http://git.openstack.org/openstack/karbor-dashboard master
 
 #run the services you want to use
 ENABLED_SERVICES=rabbit,mysql,key

@@ -1,5 +1,6 @@
 global:
-  ansible-playbook: ansible/playbook.yaml
+  ansible_playbook: ansible/playbook.yaml
+  ansible_verbose: vvvv
   bastion_user: user
   bastion_host: host
 
@@ -7,9 +8,12 @@ roles:
   fedora:
     box: fedora/24-cloud-base
   devstack-host:
-    provider_host: user
-    provider_username: root
+    provider_host: host
+    provider_user: root
     storage_pool_name: volumes
+  devstack:
+    ansible_groups:
+      - devstack
   network-devstack:
     public_network:
       - type: bridge
@@ -17,7 +21,7 @@ roles:
         ip: 1.1.1.%<item>s
     private_network:
       - ip: 10.0.%<item>s.2
-  memory-light:
+  memory-low:
     memory: 4096
     cpus: 1
   memory-medium:
@@ -26,31 +30,33 @@ roles:
   memory-high:
     memory: 16384
     cpus: 1
-  ansible-karbor:
-    ansible_args:
-      local-conf: local.conf.karbor
-    ansible_groups:
-      - devstack
+  karbor:
+    devstack_local_conf:
+      local.conf.karbor
   devstack-karbor:
     roles:
       - fedora
       - memory-medium
+      - devstack
       - network-devstack
-      - memory-medium
-      - ansible-karbor
+      - karbor
 
 machines:
-  ~range-devstack:
-    ~start: 111
-    ~count: 3
-    devstack-%<item>s:
-      roles:
-        - devstack-host
-        - devstack-karbor
-  devstack-115:
+  devstack:
+    type: range
+    start: 111
+    count: 4
     roles:
+      - devstack-host
+      - devstack-karbor
+  devstack-116:
+    roles:
+      - devstack-host
       - devstack-karbor
     memory: 4096
-    ansible_host_vars:
-      test: 1
+  test-range:
+    type: range
+    roles:
+      - devstack-host
+      - fedora
 

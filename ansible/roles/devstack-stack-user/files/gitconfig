@@ -1,0 +1,17 @@
+[alias]
+	co = checkout
+	br = branch
+	ci = commit
+	st = status
+	rb = rebase
+	lo = log --oneline --decorate
+	glo = log --oneline --decorate --graph
+[sendemail]
+	smtpserver = smtp.redhat.com
+[color]
+        ui = auto
+[core]
+        editor = vim
+
+[push]
+	default = simple

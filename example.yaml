@@ -1,0 +1,58 @@
+global:
+  ansible_playbook: # path to the ansible playbook file
+  ansible_verbose: # optional. can be "vvvv", true, false, etc
+  bastion_user: # optional. user to bastion to use for ssh
+  bastion_host: # optional. hostname of bastion to use for ssh
+
+roles:
+  example-role:
+    # any configuration attributes here will apply to machines using it
+    roles: # optional. role will inherit from sub roles by order
+      - role1
+      - role2
+
+machines:
+  example-machine:
+    # general config
+    type: machine # optional. default is machine
+    args: # any string attribute including %<arg_name>s will be substituted
+          #  with the 'arg_name' below
+      arg1: 1
+      arg2: a string
+
+    # provider config
+    provider_host: # hostname for the provider to connect to
+    provider_user: # username for the provider
+    storage_pool_name: # storage pool for libvirt
+
+    # vm config
+    box: # vagrant box to use for this machine, should be pulled in advance
+    memory: # amount of memory in MB for the machine
+    cpus: # amount of virtual cpus
+
+    # network config
+    public_network: # array of public networks
+      - type: # type of network
+        dev: # optional. network interface
+        ip: # optional. network ip
+    private_networks: # array of private networks
+      - ip: # optional. network ip
+
+    # devstack config
+    devstack_local_conf: # file to use as devstack's local.conf
+                         #  default: local.conf
+    ansible_groups: # optional. groups to associate this machine with
+                    #  default: ["devstack"]
+
+    # roles config
+    roles: # optional. machine will inherit from roles by order
+      - role1
+      - role2
+
+  example-range: # the range name may include %<item>s which will substituted
+                 # with the running index. otherwise will be suffixed with index
+    type: range
+    start: 3 # optional. default: 1
+    count: 4 # optional. default: 1
+    # all of the other attributes will be duplicated 'count' amount from 'start'
+    # %<item>s will be substituted with the running index
