@@ -1,0 +1,3 @@
+---
+- name: add stack user
+  user: name=stack home=/opt/stack groups=wheel password="$6$rounds=656000$DM7YLyADKlacXQvX$oi369beVWcXFJgZ27ZRbwaPuD0vMPn5ntQECA1bbFJQE/k7E7rvsMhPZAkM2WoPG5JT.9ac3M1DEjmjC950Gi1" state=present

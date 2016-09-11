@@ -1,0 +1,21 @@
+---
+- name: gather facts
+  setup:
+  always_run: True
+  ignore_errors: True
+  register: facts
+
+- name: install python2
+  raw: dnf -y install python-dnf libselinux-python
+  when: facts|failed
+
+- name: ensure wheel group
+  group: name=wheel state=present
+
+- name: ensure wheel sudo
+  lineinfile:
+    dest: /etc/sudoers
+    regexp: "^%wheel"
+    state: present
+    line: "%wheel ALL=(ALL) NOPASSWD: ALL"
+    validate: "visudo -cf %s"

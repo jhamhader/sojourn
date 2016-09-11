@@ -1,0 +1,21 @@
+---
+- name: obtain devstack
+  become: yes
+  become_user: stack
+  git:
+    repo: https://github.com/openstack-dev/devstack
+    dest: /opt/stack/devstack
+
+- name: set local.conf
+  become: yes
+  become_user: stack
+  copy:
+    src: local.conf
+    dest: /opt/stack/devstack/local.conf
+
+- name: run devstack
+  become: yes
+  become_user: stack
+  shell: ./stack.sh &> /opt/stack/devstack.log
+  args:
+    chdir: /opt/stack/devstack

@@ -1,0 +1,22 @@
+---
+- name: upgrade dnf
+  dnf: name=dnf state=latest
+- name: install basic tools
+  dnf: name={{item}} state=present
+  with_items:
+    - tmux
+    - python-pip
+    - vim-minimal
+    - vim
+    - xauth
+    - tigervnc
+    - git
+- name: install kernel dev
+  dnf: name=kernel-devel state=present
+- name: install c devel
+  dnf: name="@C Development Tools and Libraries" state=present
+- name: install python devel
+  dnf: name={{item}} state=present
+  with_items:
+    - python-tox
+    - python-subunit

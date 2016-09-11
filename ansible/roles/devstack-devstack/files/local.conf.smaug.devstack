@@ -1,0 +1,36 @@
+[[local|localrc]]
+
+API_WORKERS=0
+DATABASE_PASSWORD=secretdatabase
+RABBIT_PASSWORD=secretrabbit
+SERVICE_PASSWORD=secretservice
+SERVICE_TOKEN=111222333444
+ADMIN_PASSWORD=secretadmin
+DATA_DIR=$BASE/data
+
+enable_plugin karbor http://git.openstack.org/openstack/karbor refs/changes/91/365191/2
+enable_plugin karbor-dashboard http://git.openstack.org/openstack/karbor-dashboard refs/changes/30/365330/1
+
+#run the services you want to use
+ENABLED_SERVICES=rabbit,mysql,key
+ENABLED_SERVICES+=,n-cpu,n-api,n-crt,n-obj,n-cond,n-sch,n-novnc,n-cauth
+ENABLED_SERVICES+=,neutron,q-svc,q-agt,q-dhcp,q-meta
+ENABLED_SERVICES+=,cinder,g-api,g-reg
+ENABLED_SERVICES+=,c-api,c-vol,c-sch,c-bak,horizon
+ENABLED_SERVICES+=,heat,h-api,h-api-cfn,h-api-cw,h-eng
+
+#Add the karbor services
+enable_service karbor-api
+enable_service karbor-operationengine
+enable_service karbor-protection
+
+#Add the karbor-dashboard services
+enable_service karbor-dashboard
+
+#disable the default services you don't want to use
+disable_service n-net
+
+SWIFT_HASH=66a3d6b56c1f479c8b4e70ab5c2000f5
+SWIFT_REPLICAS=1
+SWIFT_DATA_DIR=$DEST/data
+enable_service s-proxy s-object s-container s-account

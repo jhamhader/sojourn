@@ -1,0 +1,5 @@
+---
+dependencies:
+  - { role: devstack-packages-prerequisites }
+  - { role: devstack-stack-user }
+  - { role: devstack-devstack }

@@ -1,0 +1,13 @@
+---
+- name: apply common role
+  hosts: devstack
+  gather_facts: false
+  remote_user: root
+  roles:
+    - common
+
+- name: apply devstack role
+  hosts: devstack
+  remote_user: root
+  roles:
+    - devstack
