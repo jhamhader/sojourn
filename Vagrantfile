@@ -27,6 +27,10 @@ def topological_sort_roles(roles)
   return TSort.tsort(each_role, each_role_child)
 end
 
+def symbolize_keys(hash)
+  return hash.each_with_object({}){|(k,v), h| h[k.to_sym] = v}
+end
+
 class VirtualMachine
   attr_accessor :name, :ansible
   def initialize(name, config)
@@ -91,21 +95,23 @@ class VirtualMachine
     ansible_config.add_machine(@name, @ansible)
   end
 
-  def create_networks_(vm_obj, type)
-    networks = get_config(type)
+  def create_networks_(vm_obj, networks, type)
     if networks.instance_of?(Hash)
       networks = [networks]
     end
     if networks.instance_of?(Array)
       networks.each { |network|
+        network = symbolize_keys(network)
         vm_obj.vm.network type, network
       }
     end
   end
 
   def create_networks(vm_obj)
-    create_networks_(vm_obj, :private_network)
-    create_networks_(vm_obj, :public_network)
+    private_networks = get_config("private_network")
+    create_networks_(vm_obj, private_networks, :private_network)
+    public_networks = get_config("public_network")
+    create_networks_(vm_obj, public_networks, :public_network)
   end
 
 end
