@@ -7,7 +7,7 @@
     dest: /opt/stack/devstack
 
 - name: set local.conf
-  copy:
+  template:
     src: "{{ devstack_local_conf }}"
     dest: /opt/stack/devstack/local.conf
     owner: stack

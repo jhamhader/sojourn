@@ -1,15 +1,16 @@
 [[local|localrc]]
 
 API_WORKERS=0
-DATABASE_PASSWORD=secretdatabase
-RABBIT_PASSWORD=secretrabbit
-SERVICE_PASSWORD=secretservice
+
+ADMIN_PASSWORD={{ admin_password | default("secretadmin") }}
+DATABASE_PASSWORD={{ database_password | default("secretdatabase") }}
+RABBIT_PASSWORD={{ rabbit_password | default("secretrabbit") }}
+SERVICE_PASSWORD={{ service_password | default("secretservice") }}
 SERVICE_TOKEN=111222333444
-ADMIN_PASSWORD=secretadmin
 DATA_DIR=$BASE/data
 
-enable_plugin karbor http://git.openstack.org/openstack/karbor master
-enable_plugin karbor-dashboard http://git.openstack.org/openstack/karbor-dashboard master
+enable_plugin karbor {{ karbor_repo | default("http://git.openstack.org/openstack/karbor") }} {{ karbor_branch | default("master") }}
+enable_plugin karbor-dashboard {{ karbor_dashboard_repo | default("http://git.openstack.org/openstack/karbor-dashboard") }} {{ karbor_dashboard_branch | default("master") }}
 
 #run the services you want to use
 ENABLED_SERVICES=rabbit,mysql,key
