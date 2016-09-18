@@ -20,3 +20,11 @@
   args:
     chdir: /opt/stack/devstack
     creates: /opt/stack/status/stack
+
+- name: enable horizon cinder backups
+  ignore_errors: True
+  replace:
+    dest: /opt/stack/horizon/openstack_dashboard/local/local_settings.py
+    backup: yes
+    regexp: 'OPENSTACK_CINDER_FEATURES = {[\s]*''enable_backup'': (False|True)(,|)[\s]*}'
+    replace: 'OPENSTACK_CINDER_FEATURES = {''enable_backup'': True}'
