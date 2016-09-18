@@ -19,3 +19,4 @@
   shell: ./stack.sh &> /opt/stack/devstack.log
   args:
     chdir: /opt/stack/devstack
+    creates: /opt/stack/status/stack
