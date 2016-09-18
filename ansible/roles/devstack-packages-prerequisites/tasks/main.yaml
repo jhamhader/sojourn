@@ -11,6 +11,7 @@
     - xauth
     - tigervnc
     - git
+    - the_silver_searcher
 - name: install kernel dev
   dnf: name=kernel-devel state=present
 - name: install c devel
