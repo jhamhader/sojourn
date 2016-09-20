@@ -1,8 +1,8 @@
 [[local|localrc]]
-ADMIN_PASSWORD={{ admin_password | default_password | default(secretadmin) }}
-DATABASE_PASSWORD={{ database_password | default_password | default(secretdatabase) }}
-RABBIT_PASSWORD={{ rabbit_password | default_password | default(secretrabbit) }}
-SERVICE_PASSWORD={{ service_password | default_password | default(secretservice) }}
+ADMIN_PASSWORD={{ admin_password | default("secretadmin") }}
+DATABASE_PASSWORD={{ database_password | default("secretdatabase") }}
+RABBIT_PASSWORD={{ rabbit_password | default("secretrabbit") }}
+SERVICE_PASSWORD={{ service_password | default("secretservice") }}
 SWIFT_HASH=66a3d6b56c1f479c8b4e70ab5c2000f5
 SWIFT_REPLICAS=1
 SWIFT_DATA_DIR=$DEST/data
