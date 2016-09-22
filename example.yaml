@@ -1,3 +1,5 @@
+# Edit this for your liking and environment and place as config.yaml
+---
 global:
   ansible_playbook: ansible/playbook.yaml
   # path to the ansible playbook file
