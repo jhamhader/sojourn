@@ -3,7 +3,7 @@
   become: yes
   become_user: stack
   git:
-    repo: https://github.com/openstack-dev/devstack
+    repo: https://git.openstack.org/openstack-dev/devstack
     dest: /opt/stack/devstack
 
 - name: set local.conf
