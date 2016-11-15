@@ -1,9 +1,9 @@
 [[local|localrc]]
 
-ADMIN_PASSWORD={{ admin_password | default("secretadmin") }}
-DATABASE_PASSWORD={{ database_password | default("secretdatabase") }}
-RABBIT_PASSWORD={{ rabbit_password | default("secretrabbit") }}
-SERVICE_PASSWORD={{ service_password | default("secretservice") }}
+ADMIN_PASSWORD={{ admin_password | default("password") }}
+DATABASE_PASSWORD={{ database_password | default("password") }}
+RABBIT_PASSWORD={{ rabbit_password | default("password") }}
+SERVICE_PASSWORD={{ service_password | default("password") }}
 SERVICE_TOKEN=111222333444
 DATA_DIR=$BASE/data
 
