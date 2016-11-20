@@ -14,8 +14,6 @@
     - the_silver_searcher
 - name: install kernel dev
   dnf: name=kernel-devel state=present
-- name: install c devel
-  dnf: name="@C Development Tools and Libraries" state=present
 - name: install python devel
   dnf: name={{item}} state=present
   with_items:
