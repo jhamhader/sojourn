@@ -13,6 +13,7 @@
     - xauth
     - tigervnc
     - git
+    - python-ipython-console
     - the_silver_searcher
 - name: install kernel dev
   dnf: name=kernel-devel state=present
