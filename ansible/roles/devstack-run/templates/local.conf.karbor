@@ -7,8 +7,9 @@ SERVICE_PASSWORD={{ service_password | default("password") }}
 SERVICE_TOKEN=111222333444
 DATA_DIR=$BASE/data
 
-enable_plugin karbor {{ karbor_repo | default("http://git.openstack.org/openstack/karbor") }} {{ karbor_branch | default("master") }}
-enable_plugin karbor-dashboard {{ karbor_dashboard_repo | default("http://git.openstack.org/openstack/karbor-dashboard") }} {{ karbor_dashboard_branch | default("master") }}
+enable_plugin karbor {{ karbor_repo | default("https://git.openstack.org/openstack/karbor") }} {{ karbor_branch | default("master") }}
+enable_plugin karbor-dashboard {{ karbor_dashboard_repo | default("https://git.openstack.org/openstack/karbor-dashboard") }} {{ karbor_dashboard_branch | default("master") }}
+enable_plugin heat {{ heat_repo | default("https://git.openstack.org/openstack/heat") }} {{ heat_branch | default("master") }}
 
 #run the services you want to use
 ENABLED_SERVICES=rabbit,mysql,key
