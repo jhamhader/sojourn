@@ -16,7 +16,7 @@ global:
 
 roles:
   fedora:
-    box: fedora/24-cloud-base
+    box: fedora/25-cloud-base
 
   fedora-high-memory:
     # any configuration attributes here will apply to machines using it
