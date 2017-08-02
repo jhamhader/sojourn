@@ -8,6 +8,8 @@
   with_items:
     - tmux
     - python-pip
+    - python2-tox
+    - python3-tox
     - vim-minimal
     - vim
     - xauth
