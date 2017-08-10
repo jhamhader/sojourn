@@ -16,6 +16,8 @@ enable_plugin karbor-dashboard {{ karbor_dashboard_repo | default("https://git.o
 
 enable_service horizon
 
+enable_service c-bak
+
 # Add the karbor services
 enable_service karbor-api
 enable_service karbor-operationengine
