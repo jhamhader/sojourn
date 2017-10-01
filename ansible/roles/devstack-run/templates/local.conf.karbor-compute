@@ -1,0 +1,36 @@
+[[local|localrc]]
+
+ADMIN_PASSWORD={{ admin_password | default("password") }}
+DATABASE_PASSWORD={{ database_password | default("password") }}
+RABBIT_PASSWORD={{ rabbit_password | default("password") }}
+SERVICE_PASSWORD={{ service_password | default("password") }}
+SERVICE_TOKEN=111222333444
+DATA_DIR=$BASE/data
+USE_SCREEN=true
+ENABLE_IDENTITY_V2=False
+SERVICE_HOST={{ controller }}
+MYSQL_HOST=$SERVICE_HOST
+RABBIT_HOST=$SERVICE_HOST
+HOST_IP={{ host_ip }}
+DATABASE_TYPE=mysql
+MULTI_HOST=1
+SERVICE_TIMEOUT=3600
+
+
+enable_plugin karbor {{ karbor_repo | default("https://git.openstack.org/openstack/karbor") }} {{ karbor_branch | default("master") }}
+enable_plugin karbor-dashboard {{ karbor_dashboard_repo | default("https://git.openstack.org/openstack/karbor-dashboard") }} {{ karbor_dashboard_branch | default("master") }}
+# enable_plugin manila https://git.openstack.org/openstack/manila master
+ENABLED_SERVICES=n-cpu,q-agt,n-api-meta,c-vol,placement-client
+
+enable_service horizon
+
+enable_service c-bak
+
+# Add the karbor services
+enable_service karbor-operationengine
+enable_service karbor-protection
+
+# MANILA_OPTGROUP_generic1_driver_handles_share_servers=False
+# MANILA_USE_SERVICE_INSTANCE_PASSWORD=True
+# MANILA_DEFAULT_SHARE_TYPE_EXTRA_SPECS="snapshot_support=True create_share_from_snapshot_support=True mount_snapshot_support=True driver_handles_share_servers=False"
+# SHARE_DRIVER=manila.share.drivers.lvm.LVMShareDriver

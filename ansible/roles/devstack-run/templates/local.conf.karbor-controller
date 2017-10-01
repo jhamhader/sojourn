@@ -1,0 +1,40 @@
+[[local|localrc]]
+
+ADMIN_PASSWORD={{ admin_password | default("password") }}
+DATABASE_PASSWORD={{ database_password | default("password") }}
+RABBIT_PASSWORD={{ rabbit_password | default("password") }}
+SERVICE_PASSWORD={{ service_password | default("password") }}
+SERVICE_TOKEN=111222333444
+DATA_DIR=$BASE/data
+USE_SCREEN=true
+ENABLE_IDENTITY_V2=False
+MULTI_HOST=1
+HOST_IP={{ host_ip }}
+
+ENABLED_SERVICES+=,neutron,q-svc,q-agt,q-dhcp,q-l3,q-meta
+ENABLED_SERVICES+=,mysql,rabbit,key
+ENABLED_SERVICES+=,g-api,g-reg
+disable_service c-vol
+disable_service n-cpu
+
+enable_plugin karbor {{ karbor_repo | default("https://git.openstack.org/openstack/karbor") }} {{ karbor_branch | default("master") }}
+enable_plugin karbor-dashboard {{ karbor_dashboard_repo | default("https://git.openstack.org/openstack/karbor-dashboard") }} {{ karbor_dashboard_branch | default("master") }}
+# enable_plugin manila https://git.openstack.org/openstack/manila master
+
+enable_service horizon
+
+# Add the karbor services
+enable_service karbor-api
+
+# Add the karbor-dashboard services
+enable_service karbor-dashboard
+
+SWIFT_HASH=66a3d6b56c1f479c8b4e70ab5c2000f5
+SWIFT_REPLICAS=1
+SWIFT_DATA_DIR=$DEST/data
+enable_service s-proxy s-object s-container s-account
+
+# MANILA_OPTGROUP_generic1_driver_handles_share_servers=False
+# MANILA_USE_SERVICE_INSTANCE_PASSWORD=True
+# MANILA_DEFAULT_SHARE_TYPE_EXTRA_SPECS="snapshot_support=True create_share_from_snapshot_support=True mount_snapshot_support=True driver_handles_share_servers=False"
+# SHARE_DRIVER=manila.share.drivers.lvm.LVMShareDriver
